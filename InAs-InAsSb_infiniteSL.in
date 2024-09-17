@@ -1,0 +1,234 @@
+$tInAs = 2.46
+$xInAsSb = 0.106
+$tInAsSb = 13
+$Temp = 10
+$VBO_InSb = 1.18
+$VBO_InAs = -0.72
+$bowpar = 0.6
+$valbowpar = -0.9
+$num_h = 1
+
+global{
+  simulate1D{}
+  
+  crystal_zb{
+    x_hkl = [1, 0, 0]
+    y_hkl = [0, 1, 0]
+  }
+  
+  substrate{
+    name = "GaSb"
+  }   
+   periodic{
+
+   x = yes      
+   #x = no
+}
+   
+
+  temperature = $Temp
+ 
+}
+
+
+
+database{
+
+ternary_zb {
+    name       = "InAs(x)Sb(1-x)"
+    valence    = III_V
+    binary_x   = InAs
+    binary_1_x = InSb
+
+    conduction_bands{
+        Gamma{bandgap = $bowpar}                                # Vurgaftman1 #0.67 before edit based on JK thesis
+    }
+
+    valence_bands{
+		bandoffset = $valbowpar #-0.4 # VBO - dSO/3 (bowing correction applied for dSO=1.2, was:) #0.0 #-0.4 before edit based on JK thesis
+        delta_SO = 0                                     # Vurgaftman1 #1.2 before edit
+    }
+} 
+
+binary_zb{
+    name = "InSb"
+    valence = III_V
+
+
+valence_bands{
+        bandoffset = $VBO_InSb #Average of HH/LH/SO unstrained band edges   }
+
+}
+}
+
+binary_zb{
+    name = "InAs"
+    valence = III_V
+valence_bands{
+        bandoffset = $VBO_InAs #Average of HH/LH/SO unstrained band edges}
+}
+}
+}
+
+structure{
+  output_region_index{ boxes = no }
+  output_contact_index{ boxes = no }
+  output_alloy_composition{ boxes = no }  
+output_impurities{ boxes = yes} 
+
+   region{
+
+      everywhere{}
+      binary{ name = "GaSb" }
+      contact{ name = "dummy" }
+        
+   }
+   
+   region{     #InAs
+
+      line{
+         x = [0.0, $tInAs]
+      }
+      binary{
+         name = "InAs"
+      }
+      repeat_x{
+      shift = $tInAs + $tInAsSb
+      num = 2
+      }
+
+   }
+
+   region{     #InAsSb
+      line{ 
+         x = [$tInAs ,$tInAs + $tInAsSb]   
+      }
+      ternary_constant{
+         name = "InAs(x)Sb(1-x)"
+         alloy_x = 0.89
+      }
+      repeat_x{
+      shift = $tInAs + $tInAsSb
+      num = 2
+      }
+
+   }
+   }
+
+
+
+grid{
+
+   xgrid{
+   line{pos = 0                                             spacing = 0.05}   
+   line{pos = $tInAs                                             spacing = 0.05}   
+   line{pos = $tInAsSb + $tInAs                                     spacing = 0.05}
+   line{pos = ((2*$tInAs)+$tInAsSb)                                 spacing = 0.05}
+   line{pos = ((2*$tInAs)+(2*$tInAsSb))                                 spacing = 0.05}   
+   }
+}
+
+classical{
+
+  Gamma{
+    output_bandedge{
+      averaged = yes
+    }
+  }
+
+  L{
+    #output_bandedge{
+    #  averaged = yes
+    #}    
+  }
+
+  X{
+    #output_bandedge{
+    #  averaged = yes
+    #}
+  }
+
+  LH{
+    output_bandedge{
+      averaged = yes
+    }
+  }
+
+  HH{
+    output_bandedge{
+      averaged = yes
+    }
+  }
+
+  SO{
+    output_bandedge{
+      averaged = yes
+    }
+  }
+
+  output_carrier_densities{}
+  output_bandgap{}
+  output_bandedges{}
+
+}
+
+strain{
+
+  minimized_strain{}
+  output_strain_tensor{}
+  output_hydrostatic_strain{}
+  
+}
+
+#poisson{
+
+#  output_potential{}
+
+#}
+
+quantum {
+
+
+
+region{
+    name = "quantum_region"
+    x = [0.0, ((2*$tInAs)+(2*$tInAsSb))]  
+    boundary{
+      x = dirichlet
+    }
+    no_density = yes
+
+
+    #Gamma{num_ev = 2}
+
+    #L{num_ev = 2}
+
+    #X{num_ev = 2}
+
+    #HH{num_ev = 2}
+
+    #LH{num_ev = 2}
+
+    #SO{num_ev = 2}
+    
+    kp_8band{ num_electrons = 1 num_holes = $num_h accuracy = 1e-9 iterations = 5000 lapack{} spurious_handling = [0.0, 1.0, -1.0, 1.0, 0.0, 1.0 ] shift_window = 0}
+
+    output_wavefunctions{ max_num = 1000  all_k_points = no  amplitudes = yes  probabilities = yes }
+
+    }
+
+}
+
+
+contacts{
+  fermi { name = "dummy" bias = 0.0 }
+}
+
+
+run{
+
+solve_strain{}
+#solve_poisson{}
+solve_quantum{}
+
+}
